@@ -214,7 +214,9 @@ public class RNPushNotificationHelper {
                 }
             }
 
-            NotificationCompat.Builder notification = new NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
+            NOTIFICATION_CHANNEL_ID_TMP = "" + NOTIFICATION_CHANNEL_ID;
+
+            NotificationCompat.Builder notification = new NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID_TMP)
                     .setContentTitle(title)
                     .setTicker(bundle.getString("ticker"))
                     .setVisibility(visibility)
@@ -596,21 +598,22 @@ public class RNPushNotificationHelper {
             }
         }
 
-        NotificationChannel channel = new NotificationChannel(NOTIFICATION_CHANNEL_ID_TMP, this.config.getChannelName(), importance);
-        channel.setDescription(this.config.getChannelDescription());
-        channel.enableLights(true);
-        channel.enableVibration(true);
-        if (soundUri != null) {
-            AudioAttributes audioAttributes = new AudioAttributes.Builder()
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                    .build();
-            channel.setSound(soundUri, audioAttributes);
-        } else {
-            channel.setSound(null, null);
-        }
+        NotificationChannel channel = new NotificationChannel(NOTIFICATION_CHANNEL_ID_TMP);
+        if (channel == null) {
+            channel = new NotificationChannel(NOTIFICATION_CHANNEL_ID_TMP, this.config.getChannelName() != null ? this.config.getChannelName() : "rn-push-notification-channel", importance);
+            channel.enableLights(true);
+            channel.enableVibration(true);
 
-        manager.createNotificationChannel(channel);
-        channelCreated = true;
+            if (soundUri != null) {
+                AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .setUsage(AudioAttributes.USAGE_ALARM)
+                        .build();
+                channel.setSound(soundUri, audioAttributes);
+            } else {
+                channel.setSound(null, null);
+            }
+            manager.createNotificationChannel(channel);
+        }
     }
 }
