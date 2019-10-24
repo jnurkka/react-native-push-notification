@@ -20,7 +20,7 @@ import android.media.AudioAttributes;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.v4.app.NotificationCompat;
+import androidx.core.app.NotificationCompat;
 import android.util.Log;
 
 import com.facebook.react.bridge.ReadableMap;
@@ -29,6 +29,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 
 import static com.dieam.reactnativepushnotification.modules.RNPushNotification.LOG_TAG;
 import static com.dieam.reactnativepushnotification.modules.RNPushNotificationAttributes.fromJson;
@@ -36,12 +39,8 @@ import static com.dieam.reactnativepushnotification.modules.RNPushNotificationAt
 public class RNPushNotificationHelper {
     public static final String PREFERENCES_KEY = "rn_push_notification";
     private static final long DEFAULT_VIBRATION = 300L;
-
     private static final String NOTIFICATION_CHANNEL_ID = "rn-push-notification-channel-id";
     private static String NOTIFICATION_CHANNEL_ID_TMP = null;
-
-    private static final CharSequence NOTIFICATION_CHANNEL_NAME = "rn-push-notification-channel";
-    private static CharSequence NOTIFICATION_CHANNEL_NAME_TMP = null;
 
     private Context context;
     private RNPushNotificationConfig config;
@@ -167,9 +166,6 @@ public class RNPushNotificationHelper {
                 title = context.getPackageManager().getApplicationLabel(appInfo).toString();
             }
 
-            NOTIFICATION_CHANNEL_ID_TMP = ""+ NOTIFICATION_CHANNEL_ID;
-            NOTIFICATION_CHANNEL_NAME_TMP = ""+ NOTIFICATION_CHANNEL_NAME;
-
             int priority = NotificationCompat.PRIORITY_HIGH;
             final String priorityString = bundle.getString("priority");
 
@@ -214,7 +210,8 @@ public class RNPushNotificationHelper {
                 }
             }
 
-            NOTIFICATION_CHANNEL_ID_TMP = "" + NOTIFICATION_CHANNEL_ID;
+
+            NOTIFICATION_CHANNEL_ID_TMP = ""+ NOTIFICATION_CHANNEL_ID;
 
             NotificationCompat.Builder notification = new NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID_TMP)
                     .setContentTitle(title)
@@ -299,9 +296,11 @@ public class RNPushNotificationHelper {
                 String soundName = bundle.getString("soundName");
                 if (soundName != null) {
                     if (!"default".equalsIgnoreCase(soundName)) {
+
                         // sound name can be full filename, or just the resource name.
                         // So the strings 'my_sound.mp3' AND 'my_sound' are accepted
                         // The reason is to make the iOS and android javascript interfaces compatible
+
                         int resId;
                         if (context.getResources().getIdentifier(soundName, "raw", context.getPackageName()) != 0) {
                             resId = context.getResources().getIdentifier(soundName, "raw", context.getPackageName());
@@ -315,17 +314,13 @@ public class RNPushNotificationHelper {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) { // API 26 and higher
                             NOTIFICATION_CHANNEL_ID_TMP = NOTIFICATION_CHANNEL_ID +"-"+ soundName;
                             notification.setChannelId(NOTIFICATION_CHANNEL_ID_TMP);
-
-                            String channelName = bundle.getString("channelName");
-                            if (channelName != null) {
-                                NOTIFICATION_CHANNEL_NAME_TMP = ""+ channelName;
-                            }
                         }
+
                     }
                 }
-
                 notification.setSound(soundUri);
             }
+
             if (soundUri == null || Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 notification.setSound(null);
             }
@@ -439,7 +434,7 @@ public class RNPushNotificationHelper {
         if (repeatType != null) {
             long fireDate = (long) bundle.getDouble("fireDate");
 
-            boolean validRepeatType = Arrays.asList("time", "week", "day", "hour", "minute").contains(repeatType);
+            boolean validRepeatType = Arrays.asList("time", "month", "week", "day", "hour", "minute").contains(repeatType);
 
             // Sanity checks
             if (!validRepeatType) {
@@ -458,6 +453,26 @@ public class RNPushNotificationHelper {
             switch (repeatType) {
                 case "time":
                     newFireDate = fireDate + repeatTime;
+                    break;
+                case "month":
+                    final Calendar fireDateCalendar = new GregorianCalendar();
+                    fireDateCalendar.setTime(new Date(fireDate));
+                    final int fireDay = fireDateCalendar.get(Calendar.DAY_OF_MONTH);
+                    final int fireMinute = fireDateCalendar.get(Calendar.MINUTE);
+                    final int fireHour = fireDateCalendar.get(Calendar.HOUR_OF_DAY);
+
+                    final Calendar nextEvent = new GregorianCalendar();
+                    nextEvent.setTime(new Date());
+                    final int currentMonth = nextEvent.get(Calendar.MONTH);
+                    int nextMonth = currentMonth < 11 ? (currentMonth + 1) : 0;
+                    nextEvent.set(Calendar.YEAR, nextEvent.get(Calendar.YEAR) + (nextMonth == 0 ? 1 : 0));
+                    nextEvent.set(Calendar.MONTH, nextMonth);
+                    final int maxDay = nextEvent.getActualMaximum(Calendar.DAY_OF_MONTH);
+                    nextEvent.set(Calendar.DAY_OF_MONTH, fireDay <= maxDay ? fireDay : maxDay);
+                    nextEvent.set(Calendar.HOUR_OF_DAY, fireHour);
+                    nextEvent.set(Calendar.MINUTE, fireMinute);
+                    nextEvent.set(Calendar.SECOND, 0);
+                    newFireDate = nextEvent.getTimeInMillis();
                     break;
                 case "week":
                     newFireDate = fireDate + 7 * ONE_DAY;
@@ -556,11 +571,8 @@ public class RNPushNotificationHelper {
         }
     }
 
-    private static boolean channelCreated = false;
     private void checkOrCreateChannel(NotificationManager manager, Uri soundUri) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O)
-            return;
-        if (channelCreated)
             return;
         if (manager == null)
             return;
@@ -598,7 +610,7 @@ public class RNPushNotificationHelper {
             }
         }
 
-        NotificationChannel channel = new NotificationChannel(NOTIFICATION_CHANNEL_ID_TMP);
+        NotificationChannel channel = manager.getNotificationChannel(NOTIFICATION_CHANNEL_ID_TMP);
         if (channel == null) {
             channel = new NotificationChannel(NOTIFICATION_CHANNEL_ID_TMP, this.config.getChannelName() != null ? this.config.getChannelName() : "rn-push-notification-channel", importance);
             channel.enableLights(true);
