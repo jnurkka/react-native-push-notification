@@ -72,11 +72,14 @@ NotificationsComponent.prototype.checkPermissions = function(callback: Function)
 NotificationsComponent.prototype.addEventListener = function(type: string, handler: Function) {
 	var listener;
 	if (type === 'notification') {
-		listener =  DeviceEventEmitter.addListener(
-			DEVICE_NOTIF_EVENT,
-			function(notifData) {
+		listener = DeviceEventEmitter.addListener(
+			'_' + DEVICE_NOTIF_EVENT,
+			async function(notifData) {
 				var data = JSON.parse(notifData.dataJSON);
-				handler(data);
+				try {
+					await handler(data);
+				} catch (e) {}
+				DeviceEventEmitter.emit(DEVICE_NOTIF_EVENT, data);
 			}
 		);
 	} else if (type === 'register') {

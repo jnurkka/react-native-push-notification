@@ -13,7 +13,7 @@ import com.facebook.react.ReactApplication;
 import com.facebook.react.ReactInstanceManager;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContext;
-import com.google.android.gms.gcm.GcmListenerService; 
+import com.google.android.gms.gcm.GcmListenerService;
 
 import org.json.JSONObject;
 
@@ -25,7 +25,7 @@ import static com.dieam.reactnativepushnotification.modules.RNPushNotification.L
 public class RNPushNotificationListenerServiceGcm extends GcmListenerService {
 
     @Override
-    public void onMessageReceived(String from, final Bundle bundle) { 
+    public void onMessageReceived(String from, final Bundle bundle) {
         JSONObject data = getPushData(bundle.getString("data"));
         // Copy `twi_body` to `message` to support Twilio
         if (bundle.containsKey("twi_body")) {
@@ -111,12 +111,6 @@ public class RNPushNotificationListenerServiceGcm extends GcmListenerService {
         }
 
         Log.v(LOG_TAG, "sendNotification: " + bundle);
-
-        if (!isForeground) {
-            Application applicationContext = (Application) context.getApplicationContext();
-            RNPushNotificationHelper pushNotificationHelper = new RNPushNotificationHelper(applicationContext);
-            pushNotificationHelper.sendToNotificationCentre(bundle);
-        }
     }
 
     private boolean isApplicationInForeground() {

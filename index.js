@@ -203,7 +203,7 @@ Notifications._onRegister = function(token: String) {
 
 Notifications._onRemoteFetch = function(notificationData: Object) {
 	if ( this.onRemoteFetch !== false ) {
-		this.onRemoteFetch(notificationData)
+		return this.onRemoteFetch(notificationData)
 	}
 };
 
@@ -217,7 +217,7 @@ Notifications._onNotification = function(data, isFromBackground = null) {
 
 	if ( this.onNotification !== false ) {
 		if ( Platform.OS === 'ios' ) {
-			this.onNotification({
+			return this.onNotification({
 				foreground: ! isFromBackground,
 				userInteraction: isFromBackground,
 				message: data.getMessage(),
@@ -242,7 +242,9 @@ Notifications._onNotification = function(data, isFromBackground = null) {
 				}
 			}
 
-			this.onNotification(notificationData);
+			notificationData.setMessage = message => data.message = message;
+
+			return this.onNotification(notificationData);
 		}
 	}
 };
