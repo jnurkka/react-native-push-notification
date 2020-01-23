@@ -76,7 +76,9 @@ NotificationsComponent.prototype.addEventListener = function(type: string, handl
 			'_' + DEVICE_NOTIF_EVENT,
 			async function(notifData) {
 				var data = JSON.parse(notifData.dataJSON);
-				await handler(data);
+				try {
+					await handler(data);
+				} catch (e) {}
 				DeviceEventEmitter.emit(DEVICE_NOTIF_EVENT, data);
 			}
 		);
