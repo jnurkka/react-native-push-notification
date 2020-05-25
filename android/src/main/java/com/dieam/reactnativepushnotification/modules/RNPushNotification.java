@@ -30,7 +30,7 @@ import android.util.Log;
 
 import com.google.firebase.messaging.FirebaseMessaging;
 
-public class RNPushNotification extends ReactContextBaseJavaModule implements ActivityEventListener {
+public class RNPushNotification extends ReactContextBaseJavaModule implements ActivityEventListener, Application.ActivityLifecycleCallbacks {
     public static final String LOG_TAG = "RNPushNotification";// all logging should use this tag
 
     private RNPushNotificationHelper mRNPushNotificationHelper;
@@ -43,6 +43,7 @@ public class RNPushNotification extends ReactContextBaseJavaModule implements Ac
         reactContext.addActivityEventListener(this);
 
         Application applicationContext = (Application) reactContext.getApplicationContext();
+        applicationContext.registerActivityLifecycleCallbacks(this);
 
         // The @ReactNative methods use this
         mRNPushNotificationHelper = new RNPushNotificationHelper(applicationContext);
@@ -73,6 +74,7 @@ public class RNPushNotification extends ReactContextBaseJavaModule implements Ac
         }
         return bundle;
     }
+    @Override
     public void onNewIntent(Intent intent) {
         Bundle bundle = this.getBundleFromIntent(intent);
         if (bundle != null) {
@@ -236,4 +238,33 @@ public class RNPushNotification extends ReactContextBaseJavaModule implements Ac
     public void registerNotificationActions(ReadableArray actions) {
         registerNotificationsReceiveNotificationActions(actions);
     }
+
+     @Override
+     public void onActivityCreated(Activity activity, Bundle bundle) {}
+
+     @Override
+     public void onActivityStarted(Activity activity) {
+         Intent intent = activity.getIntent();
+         Bundle bundle = this.getBundleFromIntent(intent);
+         if (bundle != null) {
+             bundle.putBoolean("foreground", false);
+             intent.putExtra("notification", bundle);
+             mJsDelivery.notifyNotification(bundle);
+         }
+     }
+
+     @Override
+     public void onActivityResumed(Activity activity) {}
+
+     @Override
+     public void onActivityPaused(Activity activity) {}
+
+     @Override
+     public void onActivityStopped(Activity activity) {}
+
+     @Override
+     public void onActivitySaveInstanceState(Activity activity, Bundle bundle) {}
+
+     @Override
+     public void onActivityDestroyed(Activity activity) {}
 }
